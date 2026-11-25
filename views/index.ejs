@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171923">
+  <title>Tonkatsu Proxy</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>Tonkatsu Proxy</h1>
+      <p>Web Proxy Service</p>
+    </header>
+
+    <section class="panel">
+      <h2>URLを開く</h2>
+      <form action="/p" method="GET">
+        <label for="url">接続先URL</label>
+        <input
+          id="url"
+          name="url"
+          type="url"
+          placeholder="https://example.com/"
+          autocomplete="url"
+          required
+        >
+        <button type="submit">開く</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>注意事項</h2>
+      <p>許可された接続先でのみ利用してください。</p>
+    </section>
+
+    <form action="/auth/logout" method="POST">
+      <input type="hidden" name="csrfToken" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+      <button type="submit" class="logout-button">ログアウト</button>
+    </form>
+  </main>
+</body>
+</html>
