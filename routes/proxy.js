@@ -6,31 +6,6 @@ const { requireAuth } = require("../lib/auth");
 
 const router = express.Router();
 
-function authenticate(req, res, next) {
-  const expected = process.env.PROXY_ACCESS_TOKEN;
-  const received = req.headers["x-proxy-token"];
-
-  if (!expected || !received) {
-    return res.status(401).json({
-      error: "Authentication required"
-    });
-  }
-
-  const a = Buffer.from(expected);
-  const b = Buffer.from(received);
-
-  if (
-    a.length !== b.length ||
-    !crypto.timingSafeEqual(a, b)
-  ) {
-    return res.status(403).json({
-      error: "Invalid token"
-    });
-  }
-
-  next();
-}
-
 router.all("/", requireAuth, async (req, res) => {
   if (!["GET", "HEAD"].includes(req.method)) {
     return res.status(405).json({
