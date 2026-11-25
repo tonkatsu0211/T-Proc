@@ -129,7 +129,7 @@ router.all("/", requireAuth, async (req, res) => {
     } else if (!res.destroyed) {
       res.destroy();
     }
-  finally {
+  } finally {
     if (result?.agent) {
       await result.agent.close().catch(() => {});
     }
