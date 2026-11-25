@@ -49,7 +49,11 @@ app.use(session({
 
 app.use("/auth", authRouter);
 
-app.get("/", requireAuth, (req, res) => {
+app.get("/", (req, res) => {
+  if (!req.session.authenticated) {
+    return res.redirect("/auth/login");
+  }
+
   res.render("index");
 });
 
