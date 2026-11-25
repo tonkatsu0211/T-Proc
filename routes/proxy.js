@@ -2,6 +2,7 @@ const express = require("express");
 const crypto = require("node:crypto");
 const { fetchTarget } = require("../lib/fetcher");
 const config = require("../config");
+const { requireAuth } = require("../lib/auth");
 
 const router = express.Router();
 
@@ -30,7 +31,7 @@ function authenticate(req, res, next) {
   next();
 }
 
-router.all("/", authenticate, async (req, res) => {
+router.all("/", requireAuth, async (req, res) => {
   if (!["GET", "HEAD"].includes(req.method)) {
     return res.status(405).json({
       error: "Method not allowed"
