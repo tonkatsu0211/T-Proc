@@ -7,7 +7,7 @@ const router = express.Router();
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 5,
-  standardHeaders: "draft-8",
+  standardHeaders: true,
   legacyHeaders: false
 });
 
@@ -23,32 +23,26 @@ function safeCompare(a, b) {
     crypto.timingSafeEqual(first, second);
 }
 
+function createToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
 router.get("/login", (req, res) => {
   if (req.session.authenticated) {
     return res.redirect("/");
   }
 
-  const csrfToken = crypto.randomBytes(32).toString("hex");
-
-  req.session.csrfToken = csrfToken;
+  req.session.csrfToken = createToken();
 
   res.render("login", {
-    csrfToken,
+    csrfToken: req.session.csrfToken,
     error: null
   });
 });
 
-router.post("/login", loginLimiter, async (req, res, next) => {
-  const validCSRF = safeCompare(
-    req.session.csrfToken,
-    req.body.csrfToken
-  );
-
-  if (!validCSRF) {
-    return res.status(403).render("login", {
-      csrfToken: "",
-      error: "Invalid request"
-    });
+router.post("/login", loginLimiter, (req, res, next) => {
+  if (!safeCompare(req.session.csrfToken, req.body.csrfToken)) {
+    return res.sendStatus(403);
   }
 
   const validUser = safeCompare(
@@ -62,8 +56,10 @@ router.post("/login", loginLimiter, async (req, res, next) => {
   );
 
   if (!validUser || !validPassword) {
+    req.session.csrfToken = createToken();
+
     return res.status(401).render("login", {
-      csrfToken: crypto.randomBytes(32).toString("hex"),
+      csrfToken: req.session.csrfToken,
       error: "ログインに失敗しました"
     });
   }
@@ -72,6 +68,7 @@ router.post("/login", loginLimiter, async (req, res, next) => {
     if (error) return next(error);
 
     req.session.authenticated = true;
+    req.session.csrfToken = createToken();
 
     req.session.save(error => {
       if (error) return next(error);
@@ -82,12 +79,7 @@ router.post("/login", loginLimiter, async (req, res, next) => {
 });
 
 router.post("/logout", (req, res, next) => {
-  const validCSRF = safeCompare(
-    req.session.csrfToken,
-    req.body.csrfToken
-  );
-
-  if (!validCSRF) {
+  if (!safeCompare(req.session.csrfToken, req.body.csrfToken)) {
     return res.sendStatus(403);
   }
 
@@ -101,7 +93,7 @@ router.post("/logout", (req, res, next) => {
       sameSite: "lax"
     });
 
-    res.redirect("/login");
+    res.redirect("/auth/login");
   });
 });
 
