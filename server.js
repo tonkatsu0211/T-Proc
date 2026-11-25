@@ -17,6 +17,10 @@ app.use(express.urlencoded({
 
 app.use(express.static("public"));
 
+const proxyRouter = require("./routes/proxy");
+
+app.use("/p", proxyRouter);
+
 app.get("/", (req, res) => {
   res.render("index");
 });
