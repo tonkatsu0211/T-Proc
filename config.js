@@ -1,4 +1,4 @@
-odule.exports = {
+module.exports = {
   port: process.env.PORT || 3000,
   proxyPrefix: "/p/",
   maxRedirects: 5,
