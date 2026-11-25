@@ -24,9 +24,18 @@ router.all("/", requireAuth, async (req, res) => {
   let result;
 
   try {
+    const clientController = new AbortController();
+    
+    const abortRequest = () => {
+      clientController.abort();
+    };
+    
+    res.on("close", abortRequest);
+    
     result = await fetchTarget(target, {
       method: req.method,
-      headers: req.headers
+      headers: req.headers,
+      signal: clientController.signal
     });
 
     const response = result.response;
@@ -120,7 +129,7 @@ router.all("/", requireAuth, async (req, res) => {
     } else if (!res.destroyed) {
       res.destroy();
     }
-  } finally {
+  finally {
     if (result?.agent) {
       await result.agent.close().catch(() => {});
     }
