@@ -1,6 +1,6 @@
 const express = require("express");
-const crypto = require("node:crypto");
 const { fetchTarget } = require("../lib/fetcher");
+const { processResponse } = require("../lib/response");
 const config = require("../config");
 const { requireAuth } = require("../lib/auth");
 
@@ -34,7 +34,6 @@ router.all("/", requireAuth, async (req, res) => {
     res.status(response.status);
 
     const allowedHeaders = [
-      "content-type",
       "content-language",
       "cache-control",
       "expires",
@@ -50,13 +49,54 @@ router.all("/", requireAuth, async (req, res) => {
       }
     }
 
+    const contentType = response.headers.get("content-type");
+
+    if (contentType) {
+      res.setHeader("content-type", contentType);
+    }
+
     if (req.method === "HEAD" || !response.body) {
       return res.end();
     }
 
+    const proxyURL = value =>
+      `/p?url=${encodeURIComponent(value)}`;
+
+    const processed = await processResponse(
+      response,
+      result.finalUrl.href,
+      proxyURL
+    );
+
+    if (processed.transformed) {
+      res.removeHeader("etag");
+      res.removeHeader("last-modified");
+      res.removeHeader("expires");
+    }
+
+    if (processed.contentType) {
+      res.setHeader("content-type", processed.contentType);
+    }
+
+    if (!processed.body) {
+      return res.end();
+    }
+
+    if (Buffer.isBuffer(processed.body)) {
+      if (processed.body.length > config.maxResponseSize) {
+        return res.status(413).end("Response too large");
+      }
+
+      return res.end(processed.body);
+    }
+
     let total = 0;
 
-    for await (const chunk of response.body) {
+    for await (const chunk of processed.body) {
+      if (res.destroyed) {
+        return;
+      }
+
       total += chunk.length;
 
       if (total > config.maxResponseSize) {
