@@ -54,7 +54,9 @@ app.get("/", (req, res) => {
     return res.redirect("/auth/login");
   }
 
-  res.render("index");
+  res.render("index", {
+    csrfToken: req.session.csrfToken
+  });
 });
 
 app.get("/health", (req, res) => {
